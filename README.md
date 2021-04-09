@@ -1,9 +1,9 @@
-#DFA parser, test project for JetBrains 2021 internship program
+# DFA parser, test project for JetBrains 2021 internship program
 
 This project contains a simple parser to find
 redundant assignments for an imaginary language
 
-###The syntax rules are:
+### The syntax rules are:
 
     program ::= statement_list
     statement_list ::= statement | statement_list statement
