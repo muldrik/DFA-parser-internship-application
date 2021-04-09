@@ -23,6 +23,10 @@ Output the results to a file:
 Example to run:
     
     ./gradlew run --args='src/test/resources/example.txt --output out.txt'
+    
+Run tests with:
+
+    ./gradlew test
 
 
 
