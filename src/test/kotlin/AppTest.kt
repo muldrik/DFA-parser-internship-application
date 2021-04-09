@@ -71,6 +71,11 @@ class AppTest {
         testInputs("terribleSpacing")
     }
 
+    @Test
+    fun `while traps mix`() {
+        testInputs("UltimateWhileTrap")
+    }
+
     private fun testInputs(inputFile: String) {
         val outputFileName = "$inputFile.actual"
 

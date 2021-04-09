@@ -93,6 +93,12 @@ fun parseExpression(tokens: Tokens): String {
         val constant = kek.toInt()
         representation.append(constant)
     }
+    else if (kek=="-") {
+        tokens.advance()
+        val constant = tokens.nextWord().toIntOrNull()
+            ?: throw IllegalArgumentException("Integer expected after minus sign")
+        representation.append("-$constant")
+    }
     else if (kek.isVariable()) {
         val varName = kek.first()
         tokens.updateReading(varName)
