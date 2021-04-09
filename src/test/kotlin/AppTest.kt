@@ -1,7 +1,10 @@
 import org.junit.jupiter.api.*
 import java.io.File
+import java.lang.IllegalArgumentException
 import java.nio.file.Paths
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertFailsWith
 
 class AppTest {
     companion object {
@@ -32,6 +35,30 @@ class AppTest {
     @Test
     fun `task example`() {
         testInputs("example.txt")
+    }
+
+    @Test
+    fun `simple while usage trap`() {
+        testInputs("simpleWhileTrap")
+    }
+
+    @Test
+    fun `invalid input`() {
+        assertFails() {
+            testInputs("incorrect")
+        }
+    }
+
+    @Test
+    fun `unexpected float`() {
+        assertFailsWith<IllegalArgumentException>("Unexpected operation: '10.0'. Constant or variable expected") {
+            testInputs("invalidConstant")
+        }
+    }
+
+    @Test
+    fun `densely nested if`() {
+        testInputs("nestedIf")
     }
 
     private fun testInputs(inputFile: String) {

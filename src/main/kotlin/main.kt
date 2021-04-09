@@ -70,7 +70,10 @@ fun parseProgram(tokens: Tokens) {
 fun parseCondition(tokens: Tokens) = parseExpression(tokens)
 
 fun parseStatementList(tokens: Tokens) {
-    if (tokens.nextWord() == "end" || tokens.nextWord().isEmpty()) return
+    if (tokens.nextWord() == "end" || tokens.nextWord().isEmpty()) {
+        tokens.advance()
+        return
+    }
     parseStatement(tokens)
     parseStatementList(tokens)
 }

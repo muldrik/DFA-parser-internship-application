@@ -1,0 +1,7 @@
+b = 0
+a = 5
+while (b < 5)
+  c = a
+  b = b + 1
+  a = 10
+end

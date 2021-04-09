@@ -1,0 +1,4 @@
+a = 10
+b = a = 20
+c = while
+if 10 end

@@ -1,0 +1,5 @@
+a = 10
+if a > 1 if a > 2 if a > 3 if a > 4 if a > 5 if a > 6
+b = a
+end end end end end end
+a = 20
