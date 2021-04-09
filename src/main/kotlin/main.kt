@@ -80,18 +80,16 @@ fun parseStatementList(tokens: Tokens) {
 
 fun parseExpression(tokens: Tokens): String {
     val representation = StringBuilder()
-    if (tokens.nextWord() == "("){
+    val kek = tokens.nextWord()
+    if (kek == "("){
         representation.append('(')
         tokens.advance()
         representation.append(parseExpression(tokens))
         if (tokens.nextWord().isEmpty() || tokens.nextWord().first() != ')')
             throw IllegalArgumentException("Expected ')'")
-        tokens.advance()
         representation.append(')')
-        return representation.toString()
     }
-    val kek = tokens.nextWord()
-    if (kek.toIntOrNull() != null) {
+    else if (kek.toIntOrNull() != null) {
         val constant = kek.toInt()
         representation.append(constant)
     }

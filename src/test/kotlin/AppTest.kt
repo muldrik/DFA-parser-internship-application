@@ -61,6 +61,16 @@ class AppTest {
         testInputs("nestedIf")
     }
 
+    @Test
+    fun `complicated assignment expression`() {
+        testInputs("complicatedExpression")
+    }
+
+    @Test
+    fun `ugly spacing`() {
+        testInputs("terribleSpacing")
+    }
+
     private fun testInputs(inputFile: String) {
         val outputFileName = "$inputFile.actual"
 
