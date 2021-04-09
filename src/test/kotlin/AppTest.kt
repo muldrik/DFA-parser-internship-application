@@ -80,7 +80,7 @@ class AppTest {
         val outputFileName = "$inputFile.actual"
 
         val args = arrayOf(
-            "--threads", inputFile.relativeToTestDir(),
+            inputFile.relativeToTestDir(),
             "--output", "$inputFile.actual".relativeToTemporaryDir()
         )
         main(args)

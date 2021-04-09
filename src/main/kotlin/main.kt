@@ -5,15 +5,31 @@ import com.apurebase.arkenv.parse
 import java.io.File
 import java.lang.StringBuilder
 
+
 typealias TimeStamp = Long
+typealias WhileLoopStack = MutableList<Loop>
 data class Assignment(val representation: String="", val timeStamp: TimeStamp = -2)
+data class Loop(val marked: MutableSet<Char>, val start: TimeStamp)
 
 val result = mutableListOf<Assignment>()
 
-data class Loop(val marked: MutableSet<Char>, val start: TimeStamp)
-
-typealias WhileLoopStack = MutableList<Loop>
-
+/**
+ * Main data storage for the application
+ *
+ * Handles iteration through source code and statistics update methods
+ *
+ * One object is shared between different functions parsing one program
+ *
+ * @param lines stores source code. Lines have to be split by spaces, operations and delimiters,
+ * in this project they are *=()<>+-/
+ * @property whileLoopsStack Stores information about current while loops
+ * used to handle situations when variable is initialized inside a while loop and
+ * later read in the same loop or a different nested while loop but higher in source code
+ * @property timestamp is used to indicate when a variable was last read and assigned (according to its line number)
+ * and also to mark events such as when the program enters a while loop
+ * @property lastWriting stores the timestamp of the last writing for every possible variable
+ * @property lastReading stores the timestamp of the last writing for every possible variable
+ */
 class Tokens(private val lines: List<String>) {
     val whileLoopsStack: WhileLoopStack = mutableListOf()
     private val latestExpressions = MutableList(27) { Assignment() }
@@ -53,8 +69,16 @@ class Tokens(private val lines: List<String>) {
     val operators = listOf('+', '-', '*', '/', '<', '>')
 }
 
+/**
+ * Checks if a string is a valid variable name
+ */
 fun String.isVariable() = (length == 1 && (first() - 'a' >= 0) && (first() - 'a' < 26))
 
+
+/**
+ * Parses a program stored in
+ * @param tokens, finds unused assignments and saves the results in a global variable
+ */
 fun parseProgram(tokens: Tokens) {
     val current = tokens.nextWord()
     if (current.isEmpty())
@@ -67,8 +91,15 @@ fun parseProgram(tokens: Tokens) {
     }
 }
 
+/**
+ * Can be optionally changed to distinct boolean expression from integer
+ */
 fun parseCondition(tokens: Tokens) = parseExpression(tokens)
 
+
+/**
+ * Stops parses a statement list according to language syntax
+ */
 fun parseStatementList(tokens: Tokens) {
     if (tokens.nextWord() == "end" || tokens.nextWord().isEmpty()) {
         tokens.advance()
@@ -78,33 +109,41 @@ fun parseStatementList(tokens: Tokens) {
     parseStatementList(tokens)
 }
 
+
+/**
+ * Parses an expression according to language syntax
+ * Return a string representation to later be used to output the program result
+ */
 fun parseExpression(tokens: Tokens): String {
     val representation = StringBuilder()
-    val kek = tokens.nextWord()
-    if (kek == "("){
-        representation.append('(')
-        tokens.advance()
-        representation.append(parseExpression(tokens))
-        if (tokens.nextWord().isEmpty() || tokens.nextWord().first() != ')')
-            throw IllegalArgumentException("Expected ')'")
-        representation.append(')')
+    val word = tokens.nextWord()
+    when {
+        word == "(" -> {
+            representation.append('(')
+            tokens.advance()
+            representation.append(parseExpression(tokens))
+            if (tokens.nextWord().isEmpty() || tokens.nextWord().first() != ')')
+                throw IllegalArgumentException("Expected ')'")
+            representation.append(')')
+        }
+        word.toIntOrNull() != null -> {
+            val constant = word.toInt()
+            representation.append(constant)
+        }
+        word=="-" -> {
+            tokens.advance()
+            val constant = tokens.nextWord().toIntOrNull()
+                ?: throw IllegalArgumentException("Integer expected after minus sign")
+            representation.append("-$constant")
+        }
+        word.isVariable() -> {
+            val varName = word.first()
+            tokens.updateReading(varName)
+            representation.append(word)
+        }
+        else -> throw IllegalArgumentException("Unexpected operation: '$word'. Constant or variable expected")
     }
-    else if (kek.toIntOrNull() != null) {
-        val constant = kek.toInt()
-        representation.append(constant)
-    }
-    else if (kek=="-") {
-        tokens.advance()
-        val constant = tokens.nextWord().toIntOrNull()
-            ?: throw IllegalArgumentException("Integer expected after minus sign")
-        representation.append("-$constant")
-    }
-    else if (kek.isVariable()) {
-        val varName = kek.first()
-        tokens.updateReading(varName)
-        representation.append(kek)
-    }
-    else throw IllegalArgumentException("Unexpected operation: '$kek'. Constant or variable expected")
+
     tokens.advance()
     if (tokens.nextWord().isNotEmpty() && tokens.nextWord().first() in tokens.operators) {
         representation.append(" ${tokens.nextWord()} ")
@@ -114,33 +153,43 @@ fun parseExpression(tokens: Tokens): String {
     return representation.toString()
 }
 
+
+/**
+ * Parses a statement according to language syntax
+ * If a statement is an assignment, checks whether last assignment has ever been used,
+ * if not, then adds it to the result
+ */
 fun parseStatement(tokens: Tokens) {
     val word = tokens.nextWord()
-    if (word.isVariable()) {
-        val newVar = word.first()
-        tokens.advance()
-        assert(tokens.nextWord() == "=")
-        tokens.advance()
-        val expr = parseExpression(tokens)
-        tokens.updateWriting(newVar, "$word = $expr")
-    }
-    else if (word == "if") {
-        tokens.advance()
-        parseCondition(tokens)
-        parseStatementList(tokens)
-    }
-    else if (word == "while") {
-        tokens.advance()
-        parseCondition(tokens)
-        val localUsedVariables = mutableSetOf<Char>()
-        tokens.whileLoopsStack.add(Loop(localUsedVariables, tokens.getNewTimestamp()))
-        parseStatementList(tokens)
-        tokens.whileLoopsStack.last().marked.forEach {
-            tokens.updateReading(it)
+    when {
+        (word.isVariable()) -> {
+            val newVar = word.first()
+            tokens.advance()
+            assert(tokens.nextWord() == "=")
+            tokens.advance()
+            val expr = parseExpression(tokens)
+            tokens.updateWriting(newVar, "$word = $expr")
         }
-        tokens.whileLoopsStack.removeLast()
+        word == "if" -> {
+            tokens.advance()
+            parseCondition(tokens)
+            parseStatementList(tokens)
+        }
+        word == "while" -> {
+            tokens.advance()
+            parseCondition(tokens)
+            val localUsedVariables = mutableSetOf<Char>()
+            tokens.whileLoopsStack.add(Loop(localUsedVariables, tokens.getNewTimestamp()))
+            parseStatementList(tokens)
+            tokens.whileLoopsStack.last().marked.forEach {
+                tokens.updateReading(it)
+            }
+            tokens.whileLoopsStack.removeLast()
+        }
+        else -> throw IllegalArgumentException("Unable to parse statement: '$word'. " +
+                "Variable name or condition keyword expected")
+
     }
-    else throw IllegalArgumentException("Unable to parse statement: '$word'. Variable name or condition keyword expected")
 }
 
 class Parameters : Arkenv() {
